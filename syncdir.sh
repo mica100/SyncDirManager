@@ -69,7 +69,7 @@ function REMOTE
     export CFG_RDIR="$1"
 }
 
-function SOURCE 
+function INCLUDE 
 {
     export CFG_INC="$CFG_INC '$1'"
 }
@@ -77,6 +77,21 @@ function SOURCE
 function UNISON_CFG 
 {
     export UNISON_OPT="$UNISON_OPT $1"
+}
+
+function INPLACE
+{
+    export INPLACE=1
+}
+
+function BATCH
+{
+    UNISON_CFG -batch 
+}
+
+function RUN 
+{
+    bash "$0" "$1"
 }
 # ENDOF FUNCTIONS USED IN CONFIG FILE
 
@@ -110,12 +125,17 @@ while [ $# -gt 0 ]; do
             fi
             #IFS="$OLDIFS"
 
+            if [ ${INPLACE:-0} -eq 1 ]; then
+                DEST=$(pwd -P)
+            else
+                DEST=$(pwd -P)/$(basename "$CFG_RDIR")
+            fi
             if [ "${SYNCDIR_UI:-0}" -eq 0 ]; then
                 # wait for exit in textmode
-                eval unison -ui text -batch $UNISON_OPT $INC_OPT \"$CFG_RDIR\" \"$(pwd -P)/$(basename "$CFG_RDIR")\" 
+                eval unison -ui text -batch $UNISON_OPT $INC_OPT \"$CFG_RDIR\" \"$DEST\" 
             else
                 # run grapical UI in parallel
-                eval unison -auto $UNISON_OPT $INC_OPT \"$CFG_RDIR\" \"$(pwd -P)/$(basename "$CFG_RDIR")\" &
+                eval unison -auto $UNISON_OPT $INC_OPT \"$CFG_RDIR\" \"$DEST\" &
             fi
         )
     else
@@ -134,7 +154,7 @@ while [ $# -gt 0 ]; do
         fi
         if [ "$INC" != "" ]; then
             # append INC parameter
-            echo "SOURCE \"$INC\"" >>"$LOCAL_DIR/$LOCAL_CFG"
+            echo "INCLUDE \"$INC\"" >>"$LOCAL_DIR/$LOCAL_CFG"
         fi
         echo "INFO: created config $LOCAL_DIR/$LOCAL_CFG"
     fi
