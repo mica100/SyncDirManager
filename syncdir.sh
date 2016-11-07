@@ -91,7 +91,15 @@ function BATCH
 
 function IGNORE
 {
+    UNISON_CFG "-ignore \"Name $1\""
+}
+function IGNORE_RE
+{
     UNISON_CFG "-ignore \"Regex $1\""
+}
+function IGNORE_PATH
+{
+    UNISON_CFG "-ignore \"Path $1\""
 }
 
 function FAT
