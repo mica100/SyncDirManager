@@ -34,7 +34,7 @@ fi
 LOCAL_DIR="${LOCAL_DIR:-$HOME/SyncDirManager}"
 mkdir -p "$LOCAL_DIR"
 
-UNISON_OPT="-times"
+UNISON_OPT="-times -ignore \"Name .DS_Store\" -ignore \"Regex .*\\.syncdir\""
 
 if [ $# -eq 0 ]; then
     cat <<EOF
@@ -63,10 +63,23 @@ Usage of Sync Dir Manager $(VERSION)
 EOF
 fi
 
+# FUNCTIONS USED TO READ CONFIG FILE
+function REMOTE 
+{
+    export CFG_RDIR="$1"
+}
 
-OLDIFS="$IFS"
-IFS="
-"
+function SOURCE 
+{
+    export CFG_INC="$CFG_INC '$1'"
+}
+
+function UNISON_CFG 
+{
+    export UNISON_OPT="$UNISON_OPT $1"
+}
+# ENDOF FUNCTIONS USED IN CONFIG FILE
+
 while [ $# -gt 0 ]; do
     ARG="$1"
     shift
@@ -75,39 +88,54 @@ while [ $# -gt 0 ]; do
         # execute sync if argument is a *.syncdir file
         (
             cd "$(dirname $ARG)"
+            CFG_RDIR=
+            CFG_INC=
             source "$ARG_FILE"              # set RDIR from config file
+            CFG_INC=$(echo "$CFG_INC" | sort | uniq)
+            INC_OPT=$(eval "for i in $CFG_INC; do
+                echo -n \"-path \\\"\$i\\\" \"
+            done")
+            echo "INCLUDES: $INC_OPT"
             export LOCAL_DIR="$(pwd -P)"
-            echo "INFO: sync $LOCAL_DIR <=> $RDIR"
-            if [ ! -d "$(basename "$RDIR")" ]; then
+            echo "INFO: sync $LOCAL_DIR <=> $CFG_RDIR"
+            if [ ! -d "$(basename "$CFG_RDIR")" ]; then
                 (
-                for f in $(grep -l -E -a "Archive for root .*$LOCAL_DIR/$(basename "$RDIR")[, $]" $HOME/Library/Application\ Support/Unison/*); do
-                    echo "INFO: remove old sync data about $RDIR"
+                    IFS="
+"
+                for f in $(grep -l -E -a "Archive for root .*$LOCAL_DIR/$(basename "$CFG_RDIR")(,| |$)" -r $HOME/Library/Application\ Support/Unison); do
+                    echo "INFO: remove old sync data about $CFG_RDIR"
                     rm -f "$f"
                 done
                 )
             fi
-            IFS=$OLDIFS
+            #IFS="$OLDIFS"
 
             if [ "${SYNCDIR_UI:-0}" -eq 0 ]; then
                 # wait for exit in textmode
-                unison -ui text -batch $UNISON_OPT "$RDIR" "$(pwd -P)/$(basename "$RDIR")" 
+                eval unison -ui text -batch $UNISON_OPT $INC_OPT \"$CFG_RDIR\" \"$(pwd -P)/$(basename "$CFG_RDIR")\" 
             else
                 # run grapical UI in parallel
-                unison -auto $UNISON_OPT "$RDIR" "$(pwd -P)/$(basename "$RDIR")" &
+                eval unison -auto $UNISON_OPT $INC_OPT \"$CFG_RDIR\" \"$(pwd -P)/$(basename "$CFG_RDIR")\" &
             fi
         )
     else
         # write configuration file to $LOCAL_DIR
         RDIR="$ARG"
+        INC="$(basename "$RDIR")"
+        RDIR="$(dirname "$RDIR")"
         if [ -d "$RDIR" ]; then
             # get absolute path
             RDIR=$(cd "$RDIR" && pwd -P)
         fi
 
         LOCAL_CFG="syncdir_${RDIR//[\/\\ ]/_}.syncdir"
-        cat >"$LOCAL_DIR/$LOCAL_CFG" <<EOF
-export RDIR="$RDIR"
-EOF
+        if [ ! -f "$LOCAL_DIR/$LOCAL_CFG" -o "$INC" = "" ]; then
+            echo "REMOTE \"$RDIR\"" >"$LOCAL_DIR/$LOCAL_CFG"
+        fi
+        if [ "$INC" != "" ]; then
+            # append INC parameter
+            echo "SOURCE \"$INC\"" >>"$LOCAL_DIR/$LOCAL_CFG"
+        fi
         echo "INFO: created config $LOCAL_DIR/$LOCAL_CFG"
     fi
 done
