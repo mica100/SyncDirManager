@@ -76,7 +76,7 @@ function INCLUDE
 
 function UNISON_CFG 
 {
-    export UNISON_OPT="$UNISON_OPT $1"
+    export UNISON_OPT="$UNISON_OPT $*"
 }
 
 function INPLACE
@@ -89,6 +89,15 @@ function BATCH
     UNISON_CFG -batch 
 }
 
+function IGNORE
+{
+    UNISON_CFG "-ignore \"Regex $1\""
+}
+
+function FAT
+{
+    UNISON_CFG "-fat"
+}
 function RUN 
 {
     bash "$0" "$1"
@@ -105,14 +114,16 @@ while [ $# -gt 0 ]; do
             cd "$(dirname $ARG)"
             CFG_RDIR=
             CFG_INC=
+            set -x
             source "$ARG_FILE"              # set RDIR from config file
             CFG_INC=$(echo "$CFG_INC" | sort | uniq)
             INC_OPT=$(eval "for i in $CFG_INC; do
                 echo -n \"-path \\\"\$i\\\" \"
             done")
-            echo "INCLUDES: $INC_OPT"
             export LOCAL_DIR="$(pwd -P)"
             echo "INFO: sync $LOCAL_DIR <=> $CFG_RDIR"
+            echo "INFO: INCLUDES: $INC_OPT"
+            echo "INFO: UNISON_OPT: $UNISON_OPT"
             if [ ! -d "$(basename "$CFG_RDIR")" ]; then
                 (
                     IFS="
@@ -130,13 +141,17 @@ while [ $# -gt 0 ]; do
             else
                 DEST=$(pwd -P)/$(basename "$CFG_RDIR")
             fi
+
+            #set -x
+
             if [ "${SYNCDIR_UI:-0}" -eq 0 ]; then
                 # wait for exit in textmode
-                eval unison -ui text -batch $UNISON_OPT $INC_OPT \"$CFG_RDIR\" \"$DEST\" 
+                eval unison -ui text -batch $UNISON_OPT $INC_OPT \"$DEST\" \"$CFG_RDIR\"
             else
                 # run grapical UI in parallel
-                eval unison -auto $UNISON_OPT $INC_OPT \"$CFG_RDIR\" \"$DEST\" &
+                eval unison -auto $UNISON_OPT $INC_OPT \"$DEST\" \"$CFG_RDIR\" &
             fi
+            #set +x
         )
     else
         # write configuration file to $LOCAL_DIR
