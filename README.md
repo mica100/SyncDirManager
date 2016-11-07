@@ -30,36 +30,35 @@ INSTALL instructions
  * on Mac OSX: run from menu "Unison" option "Install commandline tool"
  * others: make sure `unison` executable cat be found in PATH
 
-UI on Mac OSX
+Selfmade UI on Mac OSX
 -------------
 
 If you like to use a app to start this tool, follow these steps:
 
  * open "Automator" app
  * create a "new application"
- * add the workflow step "Run shell script"
+ * add the workflow step "Run shell script" from category "Utilities"
+ * set option for `Pass input` (top right ) to `as arguments`
  * paste in the following text:
-
-		LOG=$HOME/syncdirmanager_log.txt
 
 		IFS="
 		"
-
 		export SYNCDIR_UI=1
-		$HOME/Applications/syncdir.sh $@ &>$LOG
-		#sleep 3
-		#open $LOG
+		$HOME/Applications/syncdir.sh $@
 
  * adapt the path to the `syncdir.sh` script according to your location
- * uncomment the last two line to show up some debug output from the script
+
+![SyncDir Automator App](SyncDirAutomator.png)
+
  * save the Automator-App in e.g. `$HOME/Applications/` as e.g. SyncDir.app
  * take a directory and let it drop on the SyncDir.app application
- * in directory `$HOME/SyncDirectoryManager` a new *.syncdir file should exists
+ * in directory `$HOME/SyncDirectoryManager` a new `*.syncdir` file should exists
  * open "Information" about this file
  * select as "Open with" the SyncDir.app and click on "Change All..."
 
- * if you drop a directory or file on the app a new *syncdir file is created
- * if you drop a *syncdir file or double click a *syncdir file in the Finder the sync runs
+ * drag the app to you dock if you like
+ * if you drop a directory or file on the app a new `*.syncdir` file is created
+ * if you drop a `*.syncdir` file or double click a `*.syncdir` file in the Finder the sync runs
 
 General Remarks
 ===============
