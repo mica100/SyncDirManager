@@ -173,7 +173,19 @@ while [ $# -gt 0 ]; do
 
         LOCAL_CFG="syncdir_${RDIR//[\/\\ ]/_}.syncdir"
         if [ ! -f "$LOCAL_DIR/$LOCAL_CFG" -o "$INC" = "" ]; then
-            echo "REMOTE \"$RDIR\"" >"$LOCAL_DIR/$LOCAL_CFG"
+            cat >"$LOCAL_DIR/$LOCAL_CFG" <<EOF
+# Sync Dir Manager - configuration file
+VERSION=1
+#
+REMOTE "$RDIR"
+# INPLACE                # do not sync in subdirectory
+# FAT                    # sync a Windows FAT drive/directory
+# IGNORE \.DS_store      # ignore files by this name
+# IGNORE_RE .*Archive_.* # ignore files by this regexp
+# IGNORE_PATH temp       # ignore files within this directory
+# BATCH                  # run without user interaction
+# INCLUDE <dir_or_file>  # sync only INCLUDED subdirs or files
+EOF
         fi
         if [ "$INC" != "" ]; then
             # append INC parameter
