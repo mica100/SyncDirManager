@@ -34,7 +34,7 @@ fi
 LOCAL_DIR="${LOCAL_DIR:-$HOME/SyncDirManager}"
 mkdir -p "$LOCAL_DIR"
 
-UNISON_OPT="-times -ignore \"Name .DS_Store\" -ignore \"Regex .*\\.syncdir\""
+UNISON_OPT="-times -rsrc false -ignore \"Name .DS_Store\" -ignore \"Regex .*\\.syncdir\""
 
 if [ $# -eq 0 ]; then
     cat <<EOF
