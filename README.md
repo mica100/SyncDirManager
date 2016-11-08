@@ -71,5 +71,7 @@ General Remarks
 	|BATCH | to run without interaction (default: false with UI) |
 	|INPLACE |to not create a subdir, but in the same dir as `*.syncdir` is|
 	|UNISON_CFG `<unison option>` | to add any special option for unison |
-	|RUN `<syncdir file>` | to run additional syncdir files, from this one |
+	|RUN `<syncdir file>` | to run additional syncdir files, from this one or run a check before start syncing |
+	|FAT | sync with Windows FAT drive |
+	|IGNORE `<regex>` | Ignore some file or directories matching this regex |
  
