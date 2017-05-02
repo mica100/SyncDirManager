@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=0.2
+VERSION=0.3
 #
 # SyncDirManager (SDM) - synchronize directories
 #
@@ -69,6 +69,17 @@ function REMOTE
     export CFG_RDIR="$1"
 }
 
+function LOCALDIR
+{
+    export CFG_LDIR="$1"
+}
+
+SOURCE_IS_REMOTE=0
+function SOURCE_IS_REMOTE
+{
+    export SOURCE_IS_REMOTE=1
+}
+
 function INCLUDE 
 {
     export CFG_INC="$CFG_INC '$1'"
@@ -112,52 +123,68 @@ function RUN
 }
 # ENDOF FUNCTIONS USED IN CONFIG FILE
 
+DRY_RUN=0
 while [ $# -gt 0 ]; do
     ARG="$1"
     shift
+    if [ "$ARG" = "-n" ]; then
+        DRY_RUN=1
+        continue
+    fi
+        
     ARG_FILE="$(basename "$ARG")"
     if [ "${ARG_FILE/*.syncdir/syncdir}" = "syncdir" ]; then
         # execute sync if argument is a *.syncdir file
         (
             cd "$(dirname $ARG)"
             CFG_RDIR=
+            CFG_LDIR=
             CFG_INC=
-            set -x
+            #set -x
             source "$ARG_FILE"              # set RDIR from config file
             CFG_INC=$(echo "$CFG_INC" | sort | uniq)
             INC_OPT=$(eval "for i in $CFG_INC; do
                 echo -n \"-path \\\"\$i\\\" \"
             done")
-            export LOCAL_DIR="$(pwd -P)"
-            echo "INFO: sync $LOCAL_DIR <=> $CFG_RDIR"
-            echo "INFO: INCLUDES: $INC_OPT"
-            echo "INFO: UNISON_OPT: $UNISON_OPT"
-            if [ ! -d "$(basename "$CFG_RDIR")" ]; then
-                (
-                    IFS="
-"
-                for f in $(grep -l -E -a "Archive for root .*$LOCAL_DIR/$(basename "$CFG_RDIR")(,| |$)" -r $HOME/Library/Application\ Support/Unison); do
-                    echo "INFO: remove old sync data about $CFG_RDIR"
-                    rm -f "$f"
-                done
-                )
-            fi
-            #IFS="$OLDIFS"
+            export LOCAL_DIR="${CFG_LDIR:-$(pwd -P)}"
 
             if [ ${INPLACE:-0} -eq 1 ]; then
-                DEST=$(pwd -P)
+                DEST=$LOCAL_DIR
             else
-                DEST=$(pwd -P)/$(basename "$CFG_RDIR")
+                DEST=$LOCAL_DIR/$(basename "$CFG_RDIR")
             fi
 
-            #set -x
-
-            if [ "${SYNCDIR_UI:-0}" -eq 0 ]; then
-                # wait for exit in textmode
-                eval unison -ui text -batch $UNISON_OPT $INC_OPT \"$DEST\" \"$CFG_RDIR\"
+            if [ $SOURCE_IS_REMOTE -eq 0 ]; then
+                UNISON_OPT="$UNISON_OPT -prefer \"$DEST\""
             else
-                # run grapical UI in parallel
-                eval unison -auto $UNISON_OPT $INC_OPT \"$DEST\" \"$CFG_RDIR\" &
+                UNISON_OPT="$UNISON_OPT -prefer \"$CFG_RDIR\""
+            fi
+
+            echo "INFO: sync $DEST <=> $CFG_RDIR"
+            echo "INFO: INCLUDES: $INC_OPT"
+            echo "INFO: UNISON_OPT: $UNISON_OPT"
+
+            if [ $DRY_RUN -eq 0 ]; then
+                if [ ! -d "$(basename "$CFG_RDIR")" ]; then
+                    (
+                        IFS="
+    "
+                    for f in $(grep -l -E -a "Archive for root .*$LOCAL_DIR/$(basename "$CFG_RDIR")(,| |$)" -r $HOME/Library/Application\ Support/Unison); do
+                        echo "INFO: remove old sync data about $CFG_RDIR"
+                        rm -f "$f"
+                    done
+                    )
+                fi
+                #IFS="$OLDIFS"
+
+                #set -x
+                if [ "${SYNCDIR_UI:-0}" -eq 0 ]; then
+                    # wait for exit in textmode
+                    eval unison -ui text -batch $UNISON_OPT $INC_OPT \"$DEST\" \"$CFG_RDIR\"
+                else
+                    # run grapical UI in parallel
+                    eval unison -auto $UNISON_OPT $INC_OPT \"$DEST\" \"$CFG_RDIR\" &
+                fi
             fi
             #set +x
         )
@@ -178,6 +205,8 @@ while [ $# -gt 0 ]; do
 VERSION=1
 #
 REMOTE "$RDIR"
+# LOCALDIR "DIR"         # default to local dir + $(basename $RDIR)
+# SOURCE_IS_REMOTE       # revert default sync direction to pull from remote
 # INPLACE                # do not sync in subdirectory
 # FAT                    # sync a Windows FAT drive/directory
 # IGNORE \.DS_store      # ignore files by this name

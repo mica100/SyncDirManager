@@ -74,4 +74,6 @@ General Remarks
 	|RUN `<syncdir file>` | to run additional syncdir files, from this one or run a check before start syncing |
 	|FAT | sync with Windows FAT drive |
 	|IGNORE `<regex>` | Ignore some file or directories matching this regex |
+	|INCLUDE '<dir>' | sync only subdir matching this name (can be listed multiple times) |
+	|SOURCE_IS_REMOTE | default sync from REMOTE to local dir (when using non-ui) |
  
